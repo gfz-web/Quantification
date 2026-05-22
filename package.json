@@ -1,0 +1,9 @@
+﻿{
+  "name": "sse-fear-greed-demo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Node demo for Shanghai Composite fear-greed chart using Tencent market data.",
+  "scripts": {
+    "start": "node server.js"
+  }
+}

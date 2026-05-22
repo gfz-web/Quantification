@@ -1,0 +1,4 @@
+interface:
+  display_name: "Stop Started Processes"
+  short_description: "Track and stop local processes before finishing"
+  default_prompt: "Use $stop-started-processes when starting a local process, then stop it before ending the session."
