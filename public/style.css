@@ -1033,6 +1033,77 @@ input:focus-visible {
   margin-top: 18px;
 }
 
+.wave-hero .hero-copy h1 {
+  max-width: 16ch;
+}
+
+.wave-chart-canvas {
+  height: 560px;
+  min-height: 500px;
+}
+
+.wave-active-factors {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.wave-table {
+  min-width: 1120px;
+}
+
+.wave-history-table {
+  min-width: 1080px;
+}
+
+.wave-trade-table {
+  min-width: 1180px;
+}
+
+.wave-trade-summary {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.wave-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.wave-badge.bullish {
+  background: rgba(5, 150, 105, 0.12);
+  color: #047857;
+}
+
+.wave-badge.bearish {
+  background: rgba(220, 38, 38, 0.1);
+  color: #b91c1c;
+}
+
+.wave-badge.corrective {
+  background: rgba(217, 119, 6, 0.12);
+  color: #b45309;
+}
+
+.wave-badge.neutral {
+  background: rgba(104, 119, 137, 0.12);
+  color: #526173;
+}
+
+.wave-badge.waiting {
+  background: rgba(37, 99, 235, 0.1);
+  color: #1d4ed8;
+}
+
+.wave-notes {
+  border-top: 1px solid var(--line);
+  padding-top: 20px;
+}
+
 .error {
   margin-top: 24px;
   padding: 16px;
@@ -1074,7 +1145,9 @@ input:focus-visible {
   .backtest-summary,
   .ranking-grid,
   .allocation-grid,
-  .allocation-notes {
+  .allocation-notes,
+  .wave-active-factors,
+  .wave-trade-summary {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -1135,6 +1208,8 @@ input:focus-visible {
   .ranking-grid,
   .allocation-grid,
   .allocation-notes,
+  .wave-active-factors,
+  .wave-trade-summary,
   .date-controls {
     grid-template-columns: 1fr;
   }
