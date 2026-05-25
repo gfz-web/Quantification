@@ -1,4 +1,4 @@
-import { INDEXES, fetchIndexMinuteHistory } from './tencentDataSource.js';
+import { INDEXES, MINUTE_INDEXES, fetchIndexMinuteHistory } from './tencentDataSource.js';
 import NotificationService from '../lib/notificationService.js';
 import {
   normalizeContainment,
@@ -14,11 +14,11 @@ const DEFAULT_SYMBOL = 'sh000001';
 const DEFAULT_PERIOD = 'm30';
 const INITIAL_CASH = 1000000;
 const MAX_CENTER_AREAS = 8;
-const EXCLUDED_INTRADAY_SYMBOLS = new Set(['sh000300', 'sh000905', 'sh000852', 'sh513120', 'sh513160', 'sh511090']);
+const EXCLUDED_INTRADAY_SYMBOLS = new Set(['sh000852', 'sh513120', 'sh511090']);
 const INTRADAY_INDEXES = Object.fromEntries(
-  Object.entries(INDEXES).filter(([symbol]) => !EXCLUDED_INTRADAY_SYMBOLS.has(symbol))
+  Object.entries(MINUTE_INDEXES).filter(([symbol]) => !EXCLUDED_INTRADAY_SYMBOLS.has(symbol))
 );
-const MONITOR_PERIODS = ['m15', 'm30'];
+const MONITOR_PERIODS = ['m30'];
 const MONITOR_PERIOD_SET = new Set(MONITOR_PERIODS);
 const MONITOR_INTERVAL_MS = 5 * 60 * 1000;
 const NOTIFY_ENABLED_KEY = 'fearGreed.intradayNotifyEnabled';
@@ -756,7 +756,7 @@ function updateNotifyControls(detail = null) {
   button.textContent = notifyEnabled ? '暂停微信提醒' : '开启微信提醒';
   setNotifyText(
     notifyEnabled ? '微信提醒中' : '刷新中',
-    detail || (notifyEnabled ? '每 5 分钟刷新 15/30 分钟，有新信号会微信推送' : '每 5 分钟刷新，微信提醒未开启')
+    detail || (notifyEnabled ? '每 5 分钟刷新 30 分钟，有新信号会微信推送' : '每 5 分钟刷新，微信提醒未开启')
   );
 }
 
@@ -1419,7 +1419,7 @@ async function refreshMonitoredData({ notify = true } = {}) {
   }
 
   monitorRefreshInProgress = true;
-  updateNotifyControls('正在刷新 15/30 分钟');
+  updateNotifyControls('正在刷新 30 分钟');
   try {
     const result = await preloadMonitoredData({ forceRefresh: true, notify });
     const currentData = periodPayload[cacheKey(currentSymbol, currentPeriod)];
@@ -1542,8 +1542,8 @@ async function init() {
   bindSignalNavigation();
   renderSymbolSwitcher();
   renderPeriodSwitcher();
-  setNotifyText('加载中', '正在预加载 15/30 分钟');
-  setText('chan-zone', '正在预加载 15/30 分钟数据...');
+  setNotifyText('加载中', '正在预加载 30 分钟');
+  setText('chan-zone', '正在预加载 30 分钟数据...');
   const preloadResult = await preloadMonitoredData({ forceRefresh: false, notify: false });
   initNotificationControls();
   updateNotifyControls(

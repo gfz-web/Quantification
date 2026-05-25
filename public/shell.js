@@ -238,7 +238,7 @@ const templates = {
           <button id="intraday-notify-toggle" class="notify-button" type="button">开启微信提醒</button>
           <div class="notify-status">
             <strong id="intraday-notify-state">未开启</strong>
-            <span id="intraday-notify-detail">监控 15分钟 / 30分钟，微信推送新信号</span>
+            <span id="intraday-notify-detail">监控 30分钟，微信推送新信号</span>
           </div>
         </div>
         <div class="intraday-status-panel" aria-label="分钟缠论策略状态">

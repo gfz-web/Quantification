@@ -6,10 +6,18 @@ const INDEXES = {
   sh000852: '中证1000',
   sh510880: '红利ETF',
   sh513120: '创新药ETF',
-  sh513160: '港股科技',
+  sh513160: '港股科技ETF',
   sh518880: '黄金ETF',
   sz159941: '纳指ETF',
   sh511090: '30年国债'
+};
+
+const MINUTE_INDEXES = {
+  ...INDEXES,
+  sh511380: '可转债ETF',
+  sh512800: '银行ETF',
+  sh512690: '白酒ETF',
+  sh560090: '证券ETF'
 };
 
 const HISTORY_START_DATE = '2022-01-01';
@@ -50,7 +58,7 @@ async function fetchIndexHistory(symbol, period = 'day') {
 }
 
 async function fetchIndexMinuteHistory(symbol, period = 'm30', limit = MINUTE_HISTORY_LIMIT, options = {}) {
-  if (!INDEXES[symbol]) {
+  if (!MINUTE_INDEXES[symbol]) {
     throw new Error(`Unsupported index symbol: ${symbol}`);
   }
 
@@ -211,6 +219,7 @@ async function requestRealtimeQuote(symbol) {
 
 export {
   INDEXES,
+  MINUTE_INDEXES,
   fetchIndexHistory,
   fetchIndexMinuteHistory,
   fetchRealtimeQuote
