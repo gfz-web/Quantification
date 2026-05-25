@@ -13,7 +13,6 @@ import {
 const DEFAULT_SYMBOL = 'sh000001';
 const DEFAULT_PERIOD = 'm30';
 const INITIAL_CASH = 1000000;
-const MAX_CENTER_AREAS = 8;
 const EXCLUDED_INTRADAY_SYMBOLS = new Set(['sh000852', 'sh513120', 'sh511090']);
 const INTRADAY_INDEXES = Object.fromEntries(
   Object.entries(MINUTE_INDEXES).filter(([symbol]) => !EXCLUDED_INTRADAY_SYMBOLS.has(symbol))
@@ -832,7 +831,7 @@ function buildSegmentLineData(segments) {
 }
 
 function buildCenterAreas(centers) {
-  return centers.slice(-MAX_CENTER_AREAS).map((center) => [
+  return centers.map((center) => [
     {
       name: `中枢 ${center.id} ${center.phaseLabel || '形成中'}`,
       xAxis: center.startDate,

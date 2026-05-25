@@ -6,7 +6,6 @@ const INITIAL_CASH = 1000000;
 const MIN_STROKE_GAP = 4;
 const MIN_SEGMENT_STROKES = 3;
 const MACD_WARMUP_BARS = 35;
-const MAX_CENTER_AREAS = 6;
 
 const numberFormatter = new Intl.NumberFormat('zh-CN', {
   minimumFractionDigits: 2,
@@ -1147,7 +1146,7 @@ function buildSegmentLineData(segments) {
 }
 
 function buildCenterAreas(centers) {
-  return centers.slice(-MAX_CENTER_AREAS).map((center) => [
+  return centers.map((center) => [
     {
       name: `中枢 ${center.id} ${formatCenterPhase(center)}`,
       xAxis: center.startDate,
