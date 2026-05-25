@@ -4,7 +4,6 @@ const tabs = [
   { id: 'weekly-boll', label: '周K布林', title: '周 K 布林带', module: './weekly-boll.js' },
   { id: 'sh-chan', label: '缠论日K', title: '缠论日 K 策略', module: './chan.js' },
   { id: 'sh-chan-intraday', label: '分钟缠论', title: '多标的分钟缠论策略', module: './chan-intraday.js' },
-  { id: 'wave-000001', label: '000001波浪', title: '000001 多周期波浪结构', module: './wave.js' },
   { id: 'ma5', label: '五日线策略', title: '五日线策略计算', module: './ma5.js' },
   { id: 'ma5-turn', label: '五日线拐头', title: '五日线拐头策略计算', module: './ma5-turn.js' },
   { id: 'ma10', label: '十日线策略', title: '十日线策略计算', module: './ma10.js' },
@@ -72,7 +71,7 @@ const templates = {
         <h1 id="page-title">沪深300 CCI</h1>
         <p id="intro-text">从 2025-01-01 开始展示沪深300 CCI。计算公式为 TP = (High + Low + Close) / 3，CCI = (TP - TP 的 14 日均值) / (0.015 x 14 日平均绝对偏差)。</p>
         <div class="hero-signals" aria-label="CCI 区间">
-          <span>CCI &gt; 70 强势</span><span>-100 到 70 常态</span><span>CCI &lt; -100 弱势</span>
+          <span>CCI > 70 强势</span><span>-100 到 70 常态</span><span>CCI < -100 弱势</span>
         </div>
         <div class="date-controls" aria-label="回测日期区间">
           <label><span>开始日期</span><input id="start-date" type="date"></label>
@@ -321,87 +320,6 @@ const templates = {
     </section>
   `,
 
-  'wave-000001': `
-    <section class="hero wave-hero">
-      <article class="panel hero-copy">
-        <div class="badge">Sina 分钟K / sh000001 / 5-60分钟</div>
-        <h1>000001 波浪结构</h1>
-        <p>按拐点过滤、推动浪规则、ABC 修正和斐波那契比例，给上证指数 000001 做 60/30/15/5 分钟多周期波浪判断。</p>
-        <div class="hero-signals" aria-label="波浪周期分工">
-          <span>60分钟方向</span><span>30分钟主浪</span><span>15分钟确认</span><span>5分钟触发</span>
-        </div>
-        <div id="wave-period-switcher" class="period-controls" aria-label="波浪图表周期切换"></div>
-      </article>
-      <aside class="panel summary">
-        <div class="summary-head"><div><div class="eyebrow">Elliott Wave</div><strong>多周期结论</strong></div><div class="pulse-dot" aria-hidden="true"></div></div>
-        <div class="score"><small>综合判断</small><strong id="wave-signal">--</strong><span id="wave-signal-detail">加载中...</span></div>
-        <div class="score-track" aria-hidden="true"><span></span></div>
-        <div class="metrics">
-          <div class="metric"><div class="metric-label">综合评分</div><strong id="wave-score">--</strong></div>
-          <div class="metric"><div class="metric-label">最新时间</div><strong id="wave-updated">--</strong></div>
-        </div>
-      </aside>
-    </section>
-
-    <section class="panel section">
-      <div class="section-header">
-        <div>
-          <h2 id="wave-chart-heading">000001 30分钟波浪路径</h2>
-          <div id="wave-chart-subtitle" class="meta">加载中...</div>
-        </div>
-        <div class="meta" id="wave-range-label">加载中...</div>
-      </div>
-      <div class="chart-frame"><div id="wave-chart" class="chart-canvas wave-chart-canvas" aria-label="000001 多周期波浪图表"></div></div>
-      <div class="legend"><span class="price">000001分钟K</span><span class="cci">波浪路径</span><span class="band">关键拐点</span></div>
-      <div class="factors wave-active-factors">
-        <div class="factor"><div class="metric-label">当前浪型</div><strong id="wave-active-pattern">--</strong><div class="meta" id="wave-active-meta">--</div></div>
-        <div class="factor"><div class="metric-label">方向倾向</div><strong id="wave-active-bias">--</strong><div class="meta" id="wave-active-confidence">--</div></div>
-        <div class="factor"><div class="metric-label">关键位</div><strong id="wave-active-level">--</strong><div class="meta" id="wave-active-level-meta">--</div></div>
-        <div class="factor"><div class="metric-label">目标区间</div><strong id="wave-active-target">--</strong><div class="meta" id="wave-active-target-meta">--</div></div>
-      </div>
-      <div class="trade-section wave-trade-section">
-        <div class="section-header trade-header"><div><h2>波浪操作计划</h2><div class="meta">按 60分钟定方向、30分钟定主浪、15分钟确认、5分钟触发生成；信号仅作为策略参考。</div></div><div class="meta">不构成投资建议</div></div>
-        <div class="backtest-summary wave-trade-summary">
-          <div class="metric"><div class="metric-label">当前动作</div><strong id="wave-trade-action">--</strong></div>
-          <div class="metric"><div class="metric-label">触发价</div><strong id="wave-trade-trigger">--</strong></div>
-          <div class="metric"><div class="metric-label">防守位</div><strong id="wave-trade-stop">--</strong></div>
-          <div class="metric"><div class="metric-label">建议仓位</div><strong id="wave-trade-position">--</strong></div>
-        </div>
-        <div class="trade-table-wrap">
-          <table class="trade-table wave-trade-table">
-            <thead><tr><th>操作</th><th>触发条件</th><th>参考价</th><th>防守/失效</th><th>目标</th><th>仓位</th><th>依据</th></tr></thead>
-            <tbody id="wave-trade-list"></tbody>
-          </table>
-        </div>
-      </div>
-      <div class="trade-section">
-        <div class="section-header trade-header"><div><h2>多周期波浪判断</h2><div class="meta">同一套规则分别分析 60/30/15/5 分钟，只固定 000001。</div></div></div>
-        <div class="trade-table-wrap">
-          <table class="trade-table wave-table">
-            <thead><tr><th>周期</th><th>分工</th><th>当前判断</th><th>方向</th><th>置信度</th><th>关键位</th><th>目标/确认</th><th>最新拐点</th></tr></thead>
-            <tbody id="wave-table-list"></tbody>
-          </table>
-        </div>
-      </div>
-      <div class="trade-section">
-        <div class="section-header trade-header"><div><h2 id="wave-history-heading">当前周期历史浪型</h2><div id="wave-history-subtitle" class="meta">按当前选择周期回放最近 1600 根分钟 K 内识别到的推动浪和 ABC 修正。</div></div></div>
-        <div class="trade-table-wrap">
-          <table class="trade-table wave-history-table">
-            <thead><tr><th>结束时间</th><th>类型</th><th>方向</th><th>评分</th><th>起点</th><th>终点</th><th>关键比例</th><th>关键位</th></tr></thead>
-            <tbody id="wave-history-list"></tbody>
-          </table>
-        </div>
-        <div id="wave-history-empty" class="meta">当前周期暂未识别到高分历史浪型。</div>
-      </div>
-      <div class="allocation-notes wave-notes">
-        <div class="factor"><div class="metric-label">拐点过滤</div><strong id="wave-pivot-note">--</strong><div class="meta">ZigZag 阈值随周期和 ATR 调整</div></div>
-        <div class="factor"><div class="metric-label">规则评分</div><strong>推动浪 / ABC</strong><div class="meta">2浪、3浪、4浪和斐波那契比例共同计分</div></div>
-        <div class="factor"><div class="metric-label">失效优先</div><strong>保留备用数浪</strong><div class="meta">跌破或突破关键位后自动降低当前结构评分</div></div>
-      </div>
-      <div id="error" class="error" hidden></div>
-    </section>
-  `,
-
   ma10: `
     ${maHero('十日线策略', 'Tencent 数据源 / 沪深300 / MA10', '按收盘价和 10 日简单移动平均线计算交易信号：收盘价上穿十日线买入，收盘价下穿十日线卖出。', '收盘价 / MA10', 'ma-gap')}
     ${maSection('2025 年以来沪深300十日线走势', '展示收盘价、MA10 和上穿/下穿交易点；支持拖动缩放、悬停查看每日明细。', '偏离幅度', 'gap-value', '收盘价相对 MA10', tradeSection('收盘价', 'MA10', '<th>偏离幅度</th>', '按收盘价穿越 MA10 生成：上穿买入，下穿卖出；卖出行展示本轮收益。'))}
@@ -429,7 +347,7 @@ const templates = {
         <h1 id="page-title">十日线拐头 + 恐贪策略</h1>
         <p id="intro-text">在 MA10 拐头策略基础上叠加极端恐贪：MA10 斜率由非正转正或恐贪小于 5 买入；MA10 斜率由非负转负或恐贪大于 88 卖出。</p>
         <div class="hero-signals" aria-label="组合策略规则">
-          <span>MA10 拐头</span><span>恐贪 &lt; 5 买入</span><span>恐贪 &gt; 88 卖出</span>
+          <span>MA10 拐头</span><span>恐贪 < 5 买入</span><span>恐贪 > 88 卖出</span>
         </div>
         <div class="date-controls" aria-label="回测日期区间">
           <label><span>开始日期</span><input id="start-date" type="date"></label>
