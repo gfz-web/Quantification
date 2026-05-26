@@ -12,7 +12,8 @@ const tabs = [
   { id: 'ma20-turn', label: '二十日线拐头', title: '二十日线拐头策略计算', module: './ma20-turn.js' },
   { id: 'strategy-ranking', label: '策略收益排序', title: '策略收益排序', module: './strategy-ranking.js' },
   { id: 'ma-predict', label: '明日均线', title: '明日 5/10 日线预测', module: './ma-predict.js' },
-  { id: 'asset-allocation', label: '资产策略分配', title: '资产策略分配', module: './asset-allocation.js' }
+  { id: 'asset-allocation', label: '资产策略分配', title: '资产策略分配', module: './asset-allocation.js' },
+  { id: 'daily-reviews', label: '每日复盘', title: '每日复盘', module: './daily-reviews.js' }
 ];
 
 const templates = {
@@ -528,6 +529,56 @@ const templates = {
         <div class="factor"><div class="metric-label">建议补充</div><strong>最大回撤</strong><div class="meta">下一步可以把回撤、交易次数、胜率一起纳入排序。</div></div>
       </div>
     </section>
+  `,
+
+  'daily-reviews': `
+    <section class="hero daily-review-hero">
+      <article class="panel hero-copy">
+        <div class="badge">Daily Review / Markdown</div>
+        <h1>每日复盘</h1>
+        <p>每日记录盘面结构、关键价位与次日计划，沉淀到同一条复盘链路里。</p>
+        <div class="hero-signals" aria-label="复盘要点">
+          <span>盘面数据</span><span>多级别结构</span><span>次日计划</span>
+        </div>
+      </article>
+      <aside class="panel summary">
+        <div class="summary-head"><div><div class="eyebrow">Review Archive</div><strong>复盘归档</strong></div><div class="pulse-dot" aria-hidden="true"></div></div>
+        <div class="score"><small>文档数量</small><strong id="daily-review-count">--</strong><span id="daily-review-status">加载中...</span></div>
+        <div class="score-track" aria-hidden="true"><span style="width: 100%;"></span></div>
+        <div class="metrics">
+          <div class="metric"><div class="metric-label">最新日期</div><strong id="daily-review-latest">--</strong></div>
+          <div class="metric"><div class="metric-label">来源目录</div><strong>daily-reviews</strong></div>
+        </div>
+      </aside>
+    </section>
+
+    <section class="panel section">
+      <div class="section-header">
+        <div>
+          <h2>复盘列表</h2>
+          <div class="meta">按文档日期倒序排列。</div>
+        </div>
+        <div class="meta">Markdown</div>
+      </div>
+      <div id="daily-review-list" class="daily-review-list" aria-label="每日复盘列表"></div>
+      <div id="daily-review-empty" class="meta" hidden>暂无复盘文档。</div>
+      <div id="error" class="error" hidden></div>
+    </section>
+
+    <div id="daily-review-modal" class="daily-review-modal" role="dialog" aria-modal="true" aria-labelledby="daily-review-modal-title" hidden>
+      <div class="daily-review-backdrop" data-review-close></div>
+      <article class="daily-review-dialog">
+        <header class="daily-review-dialog-head">
+          <div>
+            <div class="eyebrow">Daily Review</div>
+            <h2 id="daily-review-modal-title">每日复盘</h2>
+            <div id="daily-review-modal-meta" class="meta">--</div>
+          </div>
+          <button id="daily-review-close" class="daily-review-close" type="button" aria-label="关闭复盘弹窗">×</button>
+        </header>
+        <div id="daily-review-content" class="daily-review-markdown"></div>
+      </article>
+    </div>
   `
 };
 
@@ -607,6 +658,7 @@ function tradeSection(closeHead, signalHead, extraHead, summary) {
 const tabNav = document.getElementById('tab-nav');
 const pageRoot = document.getElementById('page-root');
 let isLoading = false;
+let currentCleanup = null;
 
 function directChildByClass(parent, className) {
   return Array.from(parent.children).find((child) => child.classList.contains(className));
@@ -658,6 +710,15 @@ async function showTab(tabId) {
   isLoading = true;
   const tab = tabs.find((item) => item.id === tabId) || tabs[0];
   try {
+    if (currentCleanup) {
+      try {
+        currentCleanup();
+      } catch (error) {
+        console.error(`Failed to clean up tab "${tab.id}"`, error);
+      }
+      currentCleanup = null;
+    }
+
     renderNav(tab.id);
     document.title = tab.title;
     pageRoot.innerHTML = templates[tab.id];
@@ -665,7 +726,12 @@ async function showTab(tabId) {
     history.replaceState(null, '', tab.id === tabs[0].id ? '/' : `/#${tab.id}`);
 
     const module = await import(tab.module);
-    await module.init();
+    const nextCleanup = await module.init();
+    if (typeof nextCleanup === 'function') {
+      currentCleanup = nextCleanup;
+    } else if (typeof module.destroy === 'function') {
+      currentCleanup = () => module.destroy();
+    }
   } finally {
     isLoading = false;
   }

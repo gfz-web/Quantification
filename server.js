@@ -7,6 +7,7 @@ const { URL } = require('url');
 const PORT = process.env.PORT || 4009;
 const PUBLIC_DIR = path.join(__dirname, 'public');
 const LIB_DIR = path.join(__dirname, 'lib');
+const DAILY_REVIEWS_DIR = path.join(__dirname, 'daily-reviews');
 const INDEXES = {
   sh000001: '上证指数',
   sh000300: '沪深300',
@@ -38,6 +39,63 @@ function sendJson(res, statusCode, payload) {
 function parseNumber(value) {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : null;
+}
+
+function extractReviewDate(fileName) {
+  const match = fileName.match(/^(\d{4}-\d{2}-\d{2})/);
+  return match ? match[1] : fileName.replace(/\.md$/i, '');
+}
+
+function extractReviewTitle(content, fileName) {
+  const heading = content.match(/^#\s+(.+)$/m);
+  return heading ? heading[1].trim() : `${extractReviewDate(fileName)} 复盘`;
+}
+
+function readReviewFile(fileName) {
+  if (!fileName || path.basename(fileName) !== fileName || path.extname(fileName).toLowerCase() !== '.md') {
+    return Promise.reject(new Error('Invalid review file name.'));
+  }
+
+  const filePath = path.join(DAILY_REVIEWS_DIR, fileName);
+  const relative = path.relative(DAILY_REVIEWS_DIR, filePath);
+  if (relative.startsWith('..') || path.isAbsolute(relative)) {
+    return Promise.reject(new Error('Forbidden review file path.'));
+  }
+
+  return fs.promises.readFile(filePath, 'utf8');
+}
+
+async function listDailyReviews() {
+  const files = await fs.promises.readdir(DAILY_REVIEWS_DIR, { withFileTypes: true });
+  const reviewFiles = files
+    .filter((entry) => entry.isFile() && entry.name.toLowerCase().endsWith('.md'))
+    .map((entry) => entry.name)
+    .sort((a, b) => b.localeCompare(a));
+
+  return Promise.all(reviewFiles.map(async (fileName) => {
+    const content = await readReviewFile(fileName);
+    const date = extractReviewDate(fileName);
+    return {
+      id: fileName,
+      fileName,
+      date,
+      label: `${date} 复盘`,
+      title: extractReviewTitle(content, fileName)
+    };
+  }));
+}
+
+async function getDailyReview(fileName) {
+  const content = await readReviewFile(fileName);
+  const date = extractReviewDate(fileName);
+  return {
+    id: fileName,
+    fileName,
+    date,
+    label: `${date} 复盘`,
+    title: extractReviewTitle(content, fileName),
+    content
+  };
 }
 
 function httpsGetText(url) {
@@ -188,6 +246,18 @@ async function fetchSinaKLine(symbol, scale, datalen) {
 
 const server = http.createServer((req, res) => {
   const requestUrl = new URL(req.url, `http://${req.headers.host}`);
+
+  if (requestUrl.pathname === '/api/daily-reviews') {
+    const fileName = requestUrl.searchParams.get('file');
+    const handler = fileName ? getDailyReview(fileName) : listDailyReviews();
+    handler
+      .then((payload) => sendJson(res, 200, fileName ? payload : { reviews: payload }))
+      .catch((error) => {
+        const statusCode = error.code === 'ENOENT' ? 404 : 500;
+        sendJson(res, statusCode, { error: error.message });
+      });
+    return;
+  }
   
   if (requestUrl.pathname === '/api/quote') {
     fetchRealtimeQuote(requestUrl.searchParams.get('symbol'))
