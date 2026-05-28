@@ -556,7 +556,7 @@ const templates = {
       <div class="section-header">
         <div>
           <h2>复盘列表</h2>
-          <div class="meta">按文档日期倒序排列。</div>
+          <div class="meta">按文档时间戳倒序排列；新文档命名：<code>YYYYMMDDHHmmss</code> + 类型 + <code>复盘</code>，如 <code>20260528150000上证复盘.md</code>。</div>
         </div>
         <div class="meta">Markdown</div>
       </div>

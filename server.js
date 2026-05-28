@@ -3,6 +3,12 @@ const https = require('https');
 const fs = require('fs');
 const path = require('path');
 const { URL } = require('url');
+const {
+  extractReviewDate,
+  extractReviewLabel,
+  extractReviewTitle,
+  sortReviewFileNames
+} = require('./lib/dailyReviewMeta');
 
 const PORT = process.env.PORT || 4009;
 const PUBLIC_DIR = path.join(__dirname, 'public');
@@ -41,31 +47,6 @@ function parseNumber(value) {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
-function extractReviewDate(fileName) {
-  const match = fileName.match(/^(\d{4}-\d{2}-\d{2})/);
-  return match ? match[1] : fileName.replace(/\.md$/i, '');
-}
-
-function extractReviewTitle(content, fileName) {
-  const heading = content.match(/^#\s+(.+)$/m);
-  return heading ? heading[1].trim() : `${extractReviewDate(fileName)} 复盘`;
-}
-
-function extractReviewLabel(fileName) {
-  const date = extractReviewDate(fileName);
-  const slugMatch = fileName.match(/^\d{4}-\d{2}-\d{2}-(.+)\.md$/i);
-  if (!slugMatch) {
-    return `${date} 复盘`;
-  }
-
-  const slugLabels = {
-    'shanghai-index-chan-review': '上证缠论复盘',
-    '红利复盘': '红利复盘'
-  };
-  const name = slugLabels[slugMatch[1]] || slugMatch[1].replace(/-/g, ' ');
-  return `${date} ${name}`;
-}
-
 function readReviewFile(fileName) {
   if (!fileName || path.basename(fileName) !== fileName || path.extname(fileName).toLowerCase() !== '.md') {
     return Promise.reject(new Error('Invalid review file name.'));
@@ -82,10 +63,11 @@ function readReviewFile(fileName) {
 
 async function listDailyReviews() {
   const files = await fs.promises.readdir(DAILY_REVIEWS_DIR, { withFileTypes: true });
-  const reviewFiles = files
-    .filter((entry) => entry.isFile() && entry.name.toLowerCase().endsWith('.md'))
-    .map((entry) => entry.name)
-    .sort((a, b) => b.localeCompare(a));
+  const reviewFiles = sortReviewFileNames(
+    files
+      .filter((entry) => entry.isFile() && entry.name.toLowerCase().endsWith('.md'))
+      .map((entry) => entry.name)
+  );
 
   return Promise.all(reviewFiles.map(async (fileName) => {
     const content = await readReviewFile(fileName);
