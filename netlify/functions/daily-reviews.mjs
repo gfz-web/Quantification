@@ -1,16 +1,32 @@
+import { existsSync } from 'node:fs';
 import { readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
-import { createRequire } from 'node:module';
-
-const require = createRequire(import.meta.url);
-const {
+import { fileURLToPath } from 'node:url';
+import {
   extractReviewDate,
   extractReviewLabel,
   extractReviewTitle,
   sortReviewFileNames
-} = require('../../lib/dailyReviewMeta.js');
+} from './dailyReviewMeta.mjs';
 
-const DAILY_REVIEWS_DIR = path.resolve(process.cwd(), 'daily-reviews');
+const FUNCTION_DIR = path.dirname(fileURLToPath(import.meta.url));
+
+function resolveDailyReviewsDir() {
+  const candidates = [
+    path.join(process.cwd(), 'daily-reviews'),
+    path.resolve(FUNCTION_DIR, '../../daily-reviews')
+  ];
+
+  for (const candidate of candidates) {
+    if (existsSync(candidate)) {
+      return candidate;
+    }
+  }
+
+  throw new Error(`daily-reviews directory not found (cwd=${process.cwd()})`);
+}
+
+const DAILY_REVIEWS_DIR = resolveDailyReviewsDir();
 
 function json(payload, status = 200) {
   return new Response(JSON.stringify(payload), {
