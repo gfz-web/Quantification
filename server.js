@@ -51,6 +51,21 @@ function extractReviewTitle(content, fileName) {
   return heading ? heading[1].trim() : `${extractReviewDate(fileName)} 复盘`;
 }
 
+function extractReviewLabel(fileName) {
+  const date = extractReviewDate(fileName);
+  const slugMatch = fileName.match(/^\d{4}-\d{2}-\d{2}-(.+)\.md$/i);
+  if (!slugMatch) {
+    return `${date} 复盘`;
+  }
+
+  const slugLabels = {
+    'shanghai-index-chan-review': '上证缠论复盘',
+    '红利复盘': '红利复盘'
+  };
+  const name = slugLabels[slugMatch[1]] || slugMatch[1].replace(/-/g, ' ');
+  return `${date} ${name}`;
+}
+
 function readReviewFile(fileName) {
   if (!fileName || path.basename(fileName) !== fileName || path.extname(fileName).toLowerCase() !== '.md') {
     return Promise.reject(new Error('Invalid review file name.'));
@@ -79,7 +94,7 @@ async function listDailyReviews() {
       id: fileName,
       fileName,
       date,
-      label: `${date} 复盘`,
+      label: extractReviewLabel(fileName),
       title: extractReviewTitle(content, fileName)
     };
   }));
@@ -92,7 +107,7 @@ async function getDailyReview(fileName) {
     id: fileName,
     fileName,
     date,
-    label: `${date} 复盘`,
+    label: extractReviewLabel(fileName),
     title: extractReviewTitle(content, fileName),
     content
   };
