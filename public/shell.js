@@ -234,7 +234,7 @@ const templates = {
           <span id="intraday-symbol-chip">上证指数</span><span>周期切换</span><span>一买一卖</span>
         </div>
         <div id="intraday-period-switcher" class="period-controls" aria-label="分钟 K 周期切换"></div>
-        <div class="notification-controls" aria-label="分钟缠论通知">
+        <div id="intraday-notification-controls" class="notification-controls" aria-label="分钟缠论通知" hidden>
           <button id="intraday-notify-toggle" class="notify-button" type="button">开启微信提醒</button>
           <div class="notify-status">
             <strong id="intraday-notify-state">未开启</strong>

@@ -20,6 +20,8 @@ const INTRADAY_INDEXES = Object.fromEntries(
 const MONITOR_PERIODS = ['m30'];
 const MONITOR_PERIOD_SET = new Set(MONITOR_PERIODS);
 const MONITOR_INTERVAL_MS = 5 * 60 * 1000;
+/** 改为 true 可重新启用分钟缠论 WxPusher 微信推送（需保留 shell 内通知控件） */
+const INTRADAY_WECHAT_PUSH_ENABLED = false;
 const NOTIFY_ENABLED_KEY = 'fearGreed.intradayNotifyEnabled';
 const SEEN_SIGNAL_KEY = 'fearGreed.intradaySeenSignals';
 const LIVE_SIGNAL_LOG_KEY = 'fearGreed.intradayLiveSignalLog';
@@ -33,7 +35,9 @@ const PERIOD_OPTIONS = [
   { value: 'm5', label: '5分钟', limit: 1600 }
 ];
 
-NotificationService.setConfig({ strategyName: '分钟缠论' });
+if (INTRADAY_WECHAT_PUSH_ENABLED) {
+  NotificationService.setConfig({ strategyName: '分钟缠论' });
+}
 
 const numberFormatter = new Intl.NumberFormat('zh-CN', {
   minimumFractionDigits: 2,
@@ -116,7 +120,15 @@ function cacheKey(symbol, period) {
   return `${symbol}:${period}`;
 }
 
+function isWechatPushAvailable() {
+  return INTRADAY_WECHAT_PUSH_ENABLED;
+}
+
 function getStoredNotifyEnabled() {
+  if (!isWechatPushAvailable()) {
+    return false;
+  }
+
   try {
     return localStorage.getItem(NOTIFY_ENABLED_KEY) === '1';
   } catch (error) {
@@ -125,6 +137,10 @@ function getStoredNotifyEnabled() {
 }
 
 function setStoredNotifyEnabled(value) {
+  if (!isWechatPushAvailable()) {
+    return;
+  }
+
   try {
     localStorage.setItem(NOTIFY_ENABLED_KEY, value ? '1' : '0');
   } catch (error) {
@@ -413,7 +429,7 @@ function shouldNotifyLiveStatus(status) {
 }
 
 function sendLiveSignalRemedyNotification(data, record) {
-  if (!notifyEnabled) {
+  if (!isWechatPushAvailable() || !notifyEnabled) {
     return;
   }
 
@@ -441,6 +457,7 @@ function updateLiveSignalRecordsForData(data, { notify = false } = {}) {
     evaluateLiveSignalRecord(record, data);
     if (
       notify &&
+      isWechatPushAvailable() &&
       previousStatus &&
       previousStatus !== record.status &&
       shouldNotifyLiveStatus(record.status)
@@ -466,15 +483,6 @@ function liveRecordsForData(data) {
         b.executeDate.localeCompare(a.executeDate) ||
         String(b.createdAt || '').localeCompare(String(a.createdAt || ''))
     );
-}
-
-function formatClock(date = new Date()) {
-  return date.toLocaleTimeString('zh-CN', {
-    hour12: false,
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit'
-  });
 }
 
 function formatCenterRange(center) {
@@ -745,6 +753,10 @@ function setNotifyText(state, detail) {
 }
 
 function updateNotifyControls(detail = null) {
+  if (!isWechatPushAvailable()) {
+    return;
+  }
+
   const button = document.getElementById('intraday-notify-toggle');
   if (!button) {
     return;
@@ -760,6 +772,10 @@ function updateNotifyControls(detail = null) {
 }
 
 async function toggleNotifications() {
+  if (!isWechatPushAvailable()) {
+    return;
+  }
+
   if (notifyEnabled) {
     notifyEnabled = false;
     setStoredNotifyEnabled(false);
@@ -774,6 +790,19 @@ async function toggleNotifications() {
 }
 
 function initNotificationControls() {
+  const panel = document.getElementById('intraday-notification-controls');
+  if (!isWechatPushAvailable()) {
+    if (panel) {
+      panel.hidden = true;
+    }
+    notifyEnabled = false;
+    return;
+  }
+
+  if (panel) {
+    panel.hidden = false;
+  }
+
   const button = document.getElementById('intraday-notify-toggle');
   if (!button) {
     return;
@@ -1328,7 +1357,7 @@ function render(data) {
 }
 
 function sendSignalNotification(data, signal, key) {
-  if (!notifyEnabled) {
+  if (!isWechatPushAvailable() || !notifyEnabled) {
     return;
   }
 
@@ -1369,6 +1398,15 @@ function notifyNewSignals(data) {
   return count;
 }
 
+function formatClock(date = new Date()) {
+  return date.toLocaleTimeString('zh-CN', {
+    hour12: false,
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit'
+  });
+}
+
 async function preloadMonitoredData({ forceRefresh = false, notify = false } = {}) {
   const combinations = Object.keys(INTRADAY_INDEXES).flatMap((symbol) =>
     MONITOR_PERIODS.map((period) => [symbol, period])
@@ -1381,6 +1419,7 @@ async function preloadMonitoredData({ forceRefresh = false, notify = false } = {
   let newSignalCount = 0;
   let remedySignalCount = 0;
   let pushFailedCount = 0;
+  const shouldNotify = notify && isWechatPushAvailable();
 
   results.forEach((result, index) => {
     const [symbol, period] = combinations[index];
@@ -1397,13 +1436,13 @@ async function preloadMonitoredData({ forceRefresh = false, notify = false } = {
       return;
     }
 
-    if (notify) {
+    if (shouldNotify) {
       newSignalCount += notifyNewSignals(result.value);
     }
-    remedySignalCount += updateLiveSignalRecordsForData(result.value, { notify });
+    remedySignalCount += updateLiveSignalRecordsForData(result.value, { notify: shouldNotify });
   });
 
-  if (notify && notifyEnabled && newSignalCount + remedySignalCount > 0) {
+  if (shouldNotify && notifyEnabled && newSignalCount + remedySignalCount > 0) {
     const pushResult = await NotificationService.sendAllNotifications();
     pushFailedCount = pushResult.failedCount || 0;
   }
@@ -1418,17 +1457,21 @@ async function refreshMonitoredData({ notify = true } = {}) {
   }
 
   monitorRefreshInProgress = true;
-  updateNotifyControls('正在刷新 30 分钟');
+  if (isWechatPushAvailable()) {
+    updateNotifyControls('正在刷新 30 分钟');
+  }
   try {
     const result = await preloadMonitoredData({ forceRefresh: true, notify });
     const currentData = periodPayload[cacheKey(currentSymbol, currentPeriod)];
     if (isMonitoredPeriod(currentPeriod) && currentData && document.getElementById('chart')) {
       render(currentData);
     }
-    const pushText = result.pushFailedCount ? `，推送失败 ${result.pushFailedCount} 个` : '';
-    updateNotifyControls(
-      `最近刷新 ${formatClock()}，新信号 ${result.newSignalCount} 个，补救 ${result.remedySignalCount} 个，失败 ${result.failedCount} 个${pushText}`
-    );
+    if (isWechatPushAvailable()) {
+      const pushText = result.pushFailedCount ? `，推送失败 ${result.pushFailedCount} 个` : '';
+      updateNotifyControls(
+        `最近刷新 ${formatClock()}，新信号 ${result.newSignalCount} 个，补救 ${result.remedySignalCount} 个，失败 ${result.failedCount} 个${pushText}`
+      );
+    }
   } finally {
     monitorRefreshInProgress = false;
   }
@@ -1437,15 +1480,8 @@ async function refreshMonitoredData({ notify = true } = {}) {
 function startMonitorTimer() {
   stopMonitorTimer();
   monitorTimerId = window.setInterval(() => {
-    refreshMonitoredData({ notify: true });
+    refreshMonitoredData({ notify: isWechatPushAvailable() });
   }, MONITOR_INTERVAL_MS);
-}
-
-function stopMonitorTimer() {
-  if (monitorTimerId) {
-    window.clearInterval(monitorTimerId);
-    monitorTimerId = null;
-  }
 }
 
 function openSignalFromNotification(symbol, period) {
@@ -1463,6 +1499,13 @@ function openSignalFromNotification(symbol, period) {
   }
 
   showSymbolPeriod(symbol, period);
+}
+
+function stopMonitorTimer() {
+  if (monitorTimerId) {
+    window.clearInterval(monitorTimerId);
+    monitorTimerId = null;
+  }
 }
 
 async function loadPeriod(symbol, period, { forceRefresh = false } = {}) {
@@ -1541,13 +1584,17 @@ async function init() {
   bindSignalNavigation();
   renderSymbolSwitcher();
   renderPeriodSwitcher();
-  setNotifyText('加载中', '正在预加载 30 分钟');
+  if (isWechatPushAvailable()) {
+    setNotifyText('加载中', '正在预加载 30 分钟');
+  }
   setText('chan-zone', '正在预加载 30 分钟数据...');
   const preloadResult = await preloadMonitoredData({ forceRefresh: false, notify: false });
   initNotificationControls();
-  updateNotifyControls(
-    `已加载 ${preloadResult.updatedCount} 组，失败 ${preloadResult.failedCount} 组`
-  );
+  if (isWechatPushAvailable()) {
+    updateNotifyControls(
+      `已加载 ${preloadResult.updatedCount} 组，失败 ${preloadResult.failedCount} 组`
+    );
+  }
   startMonitorTimer();
   await showPeriod(currentPeriod);
 }
