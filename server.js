@@ -187,6 +187,15 @@ async function fetchRealtimeQuote(symbol) {
 }
 
 function serveStatic(reqPath, res) {
+  let decodedPath;
+  try {
+    decodedPath = decodeURIComponent(reqPath);
+  } catch {
+    sendJson(res, 400, { error: 'Invalid URL path' });
+    return;
+  }
+
+  reqPath = decodedPath;
   const isNotificationService = reqPath === '/lib/notificationService.js';
   const rootDir = isNotificationService ? LIB_DIR : PUBLIC_DIR;
   const targetPath = reqPath === '/'

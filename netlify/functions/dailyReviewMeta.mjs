@@ -1,5 +1,6 @@
 const LEGACY_SLUG_LABELS = {
   'shanghai-index-chan-review': '上证缠论复盘',
+  'hs300-chan-review': '沪深300缠论复盘',
   '红利复盘': '红利复盘'
 };
 
