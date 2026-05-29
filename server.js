@@ -4,6 +4,8 @@ const fs = require('fs');
 const path = require('path');
 const { URL } = require('url');
 const {
+  buildSummaryFileName,
+  buildSummaryPublicPath,
   extractReviewDate,
   extractReviewLabel,
   extractReviewTitle,
@@ -14,6 +16,7 @@ const PORT = process.env.PORT || 4009;
 const PUBLIC_DIR = path.join(__dirname, 'public');
 const LIB_DIR = path.join(__dirname, 'lib');
 const DAILY_REVIEWS_DIR = path.join(__dirname, 'daily-reviews');
+const DAILY_REVIEW_SUMMARIES_DIR = path.join(PUBLIC_DIR, 'daily-review-summaries');
 const INDEXES = {
   sh000001: '上证指数',
   sh000300: '沪深300',
@@ -61,6 +64,30 @@ function readReviewFile(fileName) {
   return fs.promises.readFile(filePath, 'utf8');
 }
 
+async function summaryExistsForReview(fileName) {
+  const summaryFileName = buildSummaryFileName(fileName);
+  if (!summaryFileName) {
+    return false;
+  }
+
+  const summaryPath = path.join(DAILY_REVIEW_SUMMARIES_DIR, summaryFileName);
+  try {
+    await fs.promises.access(summaryPath);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function attachSummaryMeta(review) {
+  const hasSummary = await summaryExistsForReview(review.fileName);
+  return {
+    ...review,
+    hasSummary,
+    summaryUrl: hasSummary ? buildSummaryPublicPath(review.fileName) : null
+  };
+}
+
 async function listDailyReviews() {
   const files = await fs.promises.readdir(DAILY_REVIEWS_DIR, { withFileTypes: true });
   const reviewFiles = sortReviewFileNames(
@@ -69,7 +96,7 @@ async function listDailyReviews() {
       .map((entry) => entry.name)
   );
 
-  return Promise.all(reviewFiles.map(async (fileName) => {
+  const reviews = await Promise.all(reviewFiles.map(async (fileName) => {
     const content = await readReviewFile(fileName);
     const date = extractReviewDate(fileName);
     return {
@@ -80,12 +107,14 @@ async function listDailyReviews() {
       title: extractReviewTitle(content, fileName)
     };
   }));
+
+  return Promise.all(reviews.map(attachSummaryMeta));
 }
 
 async function getDailyReview(fileName) {
   const content = await readReviewFile(fileName);
   const date = extractReviewDate(fileName);
-  return {
+  const review = {
     id: fileName,
     fileName,
     date,
@@ -93,6 +122,8 @@ async function getDailyReview(fileName) {
     title: extractReviewTitle(content, fileName),
     content
   };
+
+  return attachSummaryMeta(review);
 }
 
 function httpsGetText(url) {

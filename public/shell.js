@@ -547,7 +547,7 @@ const templates = {
         <div class="score-track" aria-hidden="true"><span style="width: 100%;"></span></div>
         <div class="metrics">
           <div class="metric"><div class="metric-label">最新日期</div><strong id="daily-review-latest">--</strong></div>
-          <div class="metric"><div class="metric-label">来源目录</div><strong>daily-reviews</strong></div>
+          <div class="metric"><div class="metric-label">摘要数量</div><strong id="daily-review-summary-count">--</strong></div>
         </div>
       </aside>
     </section>
@@ -556,9 +556,11 @@ const templates = {
       <div class="section-header">
         <div>
           <h2>复盘列表</h2>
-          <div class="meta">按文档时间戳倒序排列；新文档命名：<code>YYYYMMDDHHmmss</code> + 类型 + <code>复盘</code>，如 <code>20260528150000上证复盘.md</code>。</div>
+          <div class="meta">按文档时间戳倒序排列；点击条目查看完整复盘，有摘要的文档可直接打开分模块摘要。</div>
         </div>
-        <div class="meta">Markdown</div>
+        <div class="daily-review-actions">
+          <a id="daily-review-summary-index" class="daily-review-summary-index" href="/daily-review-summaries/index.html" target="_blank" rel="noopener">分模块摘要索引</a>
+        </div>
       </div>
       <div id="daily-review-list" class="daily-review-list" aria-label="每日复盘列表"></div>
       <div id="daily-review-empty" class="meta" hidden>暂无复盘文档。</div>
@@ -573,10 +575,17 @@ const templates = {
             <div class="eyebrow">Daily Review</div>
             <h2 id="daily-review-modal-title">每日复盘</h2>
             <div id="daily-review-modal-meta" class="meta">--</div>
+            <div id="daily-review-view-tabs" class="daily-review-view-tabs" role="tablist" aria-label="复盘视图切换" hidden>
+              <button id="daily-review-tab-full" class="daily-review-view-tab is-active" type="button" role="tab" aria-selected="true" aria-controls="daily-review-content" data-review-view="full">完整复盘</button>
+              <button id="daily-review-tab-summary" class="daily-review-view-tab" type="button" role="tab" aria-selected="false" aria-controls="daily-review-summary-frame" data-review-view="summary">分模块摘要</button>
+            </div>
           </div>
           <button id="daily-review-close" class="daily-review-close" type="button" aria-label="关闭复盘弹窗">×</button>
         </header>
-        <div id="daily-review-content" class="daily-review-markdown"></div>
+        <div class="daily-review-dialog-body">
+          <div id="daily-review-content" class="daily-review-markdown" role="tabpanel" aria-labelledby="daily-review-tab-full"></div>
+          <iframe id="daily-review-summary-frame" class="daily-review-summary-frame" title="分模块摘要" hidden></iframe>
+        </div>
       </article>
     </div>
   `

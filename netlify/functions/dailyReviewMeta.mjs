@@ -84,8 +84,22 @@ function extractReviewTitle(content, fileName) {
   return heading ? heading[1].trim() : extractReviewLabel(fileName);
 }
 
+function buildSummaryFileName(reviewFileName) {
+  if (!reviewFileName || !/\.md$/i.test(reviewFileName)) {
+    return null;
+  }
+  return reviewFileName.replace(/\.md$/i, '-summary.html');
+}
+
+function buildSummaryPublicPath(reviewFileName) {
+  const summaryFileName = buildSummaryFileName(reviewFileName);
+  return summaryFileName ? `/daily-review-summaries/${summaryFileName}` : null;
+}
+
 export {
   buildReviewFileName,
+  buildSummaryFileName,
+  buildSummaryPublicPath,
   parseReviewFileName,
   sortReviewFileNames,
   extractReviewDate,

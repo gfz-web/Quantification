@@ -1,6 +1,8 @@
 let cleanup = null;
 let lastTrigger = null;
 let activeModalAbortController = null;
+let activeReview = null;
+let activeView = 'full';
 
 function getEl(id) {
   return document.getElementById(id);
@@ -191,10 +193,56 @@ function stopActiveModalRequest() {
   }
 }
 
+function setReviewView(view) {
+  const normalizedView = view === 'summary' ? 'summary' : 'full';
+  const canShowSummary = Boolean(activeReview && activeReview.summaryUrl);
+  activeView = canShowSummary && normalizedView === 'summary' ? 'summary' : 'full';
+
+  const tabs = getEl('daily-review-view-tabs');
+  const fullTab = getEl('daily-review-tab-full');
+  const summaryTab = getEl('daily-review-tab-summary');
+  const content = getEl('daily-review-content');
+  const summaryFrame = getEl('daily-review-summary-frame');
+  const dialog = getEl('daily-review-modal')?.querySelector('.daily-review-dialog');
+
+  if (dialog) {
+    dialog.classList.toggle('is-summary-view', activeView === 'summary');
+  }
+
+  if (tabs) {
+    tabs.hidden = !canShowSummary;
+  }
+
+  if (fullTab && summaryTab) {
+    fullTab.classList.toggle('is-active', activeView === 'full');
+    summaryTab.classList.toggle('is-active', activeView === 'summary');
+    fullTab.setAttribute('aria-selected', activeView === 'full' ? 'true' : 'false');
+    summaryTab.setAttribute('aria-selected', activeView === 'summary' ? 'true' : 'false');
+    summaryTab.disabled = !canShowSummary;
+  }
+
+  if (content && summaryFrame) {
+    content.hidden = activeView !== 'full';
+    summaryFrame.hidden = activeView !== 'summary';
+
+    if (activeView === 'summary' && canShowSummary) {
+      if (summaryFrame.getAttribute('src') !== activeReview.summaryUrl) {
+        summaryFrame.setAttribute('src', activeReview.summaryUrl);
+      }
+    } else {
+      summaryFrame.removeAttribute('src');
+    }
+  }
+}
+
 function closeReviewModal() {
   stopActiveModalRequest();
   const modal = getEl('daily-review-modal');
   const shouldRestoreFocus = Boolean(modal && !modal.hidden);
+
+  activeReview = null;
+  activeView = 'full';
+  setReviewView('full');
 
   if (modal) {
     modal.hidden = true;
@@ -206,7 +254,7 @@ function closeReviewModal() {
   lastTrigger = null;
 }
 
-async function openReviewModal(review, trigger) {
+async function openReviewModal(review, trigger, preferredView = 'full') {
   const modal = getEl('daily-review-modal');
   const content = getEl('daily-review-content');
   const requestController = new AbortController();
@@ -214,10 +262,13 @@ async function openReviewModal(review, trigger) {
   stopActiveModalRequest();
   activeModalAbortController = requestController;
   lastTrigger = trigger;
+  activeReview = review;
+  activeView = preferredView === 'summary' && review.summaryUrl ? 'summary' : 'full';
 
   setText('daily-review-modal-title', review.label);
   setText('daily-review-modal-meta', review.title);
   content.innerHTML = '<p>加载中...</p>';
+  setReviewView(activeView);
   modal.hidden = false;
   document.body.classList.add('modal-open');
   getEl('daily-review-close').focus();
@@ -229,14 +280,17 @@ async function openReviewModal(review, trigger) {
     if (activeModalAbortController !== requestController) {
       return;
     }
+    activeReview = detail;
     setText('daily-review-modal-title', detail.label);
     setText('daily-review-modal-meta', detail.title);
     content.innerHTML = renderMarkdown(detail.content);
+    setReviewView(activeView);
   } catch (error) {
     if (error.name === 'AbortError') {
       return;
     }
     content.innerHTML = `<div class="error">加载失败：${escapeHtml(error.message)}</div>`;
+    setReviewView('full');
   } finally {
     if (activeModalAbortController === requestController) {
       activeModalAbortController = null;
@@ -251,14 +305,29 @@ function renderReviewList(reviews) {
   empty.hidden = reviews.length > 0;
 
   reviews.forEach((review) => {
+    const row = document.createElement('div');
+    row.className = 'daily-review-row';
+
     const button = document.createElement('button');
     button.type = 'button';
     button.className = 'daily-review-item';
     button.setAttribute('aria-haspopup', 'dialog');
-    button.setAttribute('aria-label', `${review.label}，点击查看复盘`);
+    button.setAttribute('aria-label', `${review.label}，点击查看完整复盘`);
     button.textContent = review.label;
-    button.addEventListener('click', () => openReviewModal(review, button));
-    list.appendChild(button);
+    button.addEventListener('click', () => openReviewModal(review, button, 'full'));
+    row.appendChild(button);
+
+    if (review.hasSummary) {
+      const summaryButton = document.createElement('button');
+      summaryButton.type = 'button';
+      summaryButton.className = 'daily-review-summary-btn';
+      summaryButton.setAttribute('aria-label', `${review.label}，查看分模块摘要`);
+      summaryButton.textContent = '摘要';
+      summaryButton.addEventListener('click', () => openReviewModal(review, summaryButton, 'summary'));
+      row.appendChild(summaryButton);
+    }
+
+    list.appendChild(row);
   });
 }
 
@@ -294,13 +363,24 @@ async function init() {
     }
   }, { signal: abortController.signal });
 
+  getEl('daily-review-tab-full').addEventListener('click', () => setReviewView('full'), { signal: abortController.signal });
+  getEl('daily-review-tab-summary').addEventListener('click', () => setReviewView('summary'), { signal: abortController.signal });
+
   try {
     const payload = await fetchJson('/api/daily-reviews', { signal: abortController.signal });
     const reviews = payload.reviews || [];
+    const summaryCount = reviews.filter((review) => review.hasSummary).length;
+
     renderReviewList(reviews);
     setText('daily-review-count', String(reviews.length));
     setText('daily-review-status', reviews.length ? '已归档' : '暂无文档');
     setText('daily-review-latest', reviews[0] ? reviews[0].date : '--');
+    setText('daily-review-summary-count', String(summaryCount));
+
+    const summaryIndexLink = getEl('daily-review-summary-index');
+    if (summaryIndexLink) {
+      summaryIndexLink.hidden = summaryCount === 0;
+    }
   } catch (error) {
     if (error.name === 'AbortError') {
       return destroy;
@@ -309,6 +389,7 @@ async function init() {
     setText('daily-review-count', '0');
     setText('daily-review-status', '加载失败');
     setText('daily-review-latest', '--');
+    setText('daily-review-summary-count', '0');
     errorBox.hidden = false;
     errorBox.textContent = `加载失败：${error.message}`;
   } finally {

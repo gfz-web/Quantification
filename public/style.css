@@ -1118,6 +1118,57 @@ input:focus-visible {
   gap: 6px;
 }
 
+.daily-review-row {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.daily-review-row .daily-review-item {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.daily-review-summary-btn,
+.daily-review-summary-index {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid rgba(37, 99, 235, 0.22);
+  border-radius: var(--radius-sm);
+  background: rgba(37, 99, 235, 0.08);
+  color: var(--price);
+  font-size: 0.88rem;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: border-color 160ms ease, background 160ms ease, color 160ms ease;
+}
+
+.daily-review-summary-btn {
+  flex: 0 0 auto;
+}
+
+.daily-review-summary-btn:hover,
+.daily-review-summary-index:hover {
+  border-color: var(--price);
+  background: rgba(37, 99, 235, 0.14);
+}
+
+.daily-review-summary-btn:focus-visible,
+.daily-review-summary-index:focus-visible {
+  outline: 2px solid var(--price);
+  outline-offset: 2px;
+}
+
+.daily-review-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .daily-review-item {
   display: block;
   width: 100%;
@@ -1146,6 +1197,73 @@ input:focus-visible {
   border-top-color: var(--line);
 }
 
+.daily-review-view-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.daily-review-view-tab {
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface-muted);
+  color: var(--muted);
+  font-size: 0.84rem;
+  font-weight: 700;
+  transition: border-color 160ms ease, background 160ms ease, color 160ms ease;
+}
+
+.daily-review-view-tab:hover:not(:disabled) {
+  border-color: var(--price);
+  color: var(--price);
+}
+
+.daily-review-view-tab.is-active {
+  border-color: var(--price);
+  background: rgba(37, 99, 235, 0.1);
+  color: var(--price);
+}
+
+.daily-review-view-tab:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.daily-review-summary-frame {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  border: 0;
+  background: #f4f7fb;
+}
+
+.daily-review-dialog-body {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.daily-review-dialog:not(.is-summary-view) .daily-review-dialog-body {
+  max-height: calc(min(86vh, 880px) - 120px);
+}
+
+.daily-review-dialog:not(.is-summary-view) .daily-review-markdown {
+  max-height: calc(min(86vh, 880px) - 120px);
+}
+
+.daily-review-dialog.is-summary-view .daily-review-dialog-body {
+  flex: 1 1 auto;
+  display: flex;
+  min-height: 0;
+}
+
+.daily-review-dialog.is-summary-view .daily-review-summary-frame {
+  flex: 1 1 auto;
+  min-height: 520px;
+}
+
 .daily-review-modal {
   position: fixed;
   inset: 0;
@@ -1168,8 +1286,8 @@ input:focus-visible {
 .daily-review-dialog {
   position: relative;
   z-index: 1;
-  display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
+  display: flex;
+  flex-direction: column;
   width: min(960px, 100%);
   max-height: min(86vh, 880px);
   border: 1px solid var(--line);
@@ -1179,7 +1297,14 @@ input:focus-visible {
   overflow: hidden;
 }
 
+.daily-review-dialog.is-summary-view {
+  width: min(1080px, calc(100vw - 48px));
+  height: min(92vh, 960px);
+  max-height: min(92vh, 960px);
+}
+
 .daily-review-dialog-head {
+  flex: 0 0 auto;
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -1444,6 +1569,16 @@ input:focus-visible {
 
   .daily-review-dialog {
     max-height: 92vh;
+  }
+
+  .daily-review-dialog.is-summary-view {
+    width: calc(100vw - 24px);
+    height: calc(100vh - 24px);
+    max-height: calc(100vh - 24px);
+  }
+
+  .daily-review-dialog.is-summary-view .daily-review-summary-frame {
+    min-height: 0;
   }
 
   .daily-review-dialog-head,
